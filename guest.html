@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>猜数字游戏</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .game-container {
+            text-align: center;
+            background-color: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            z-index: 1;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            line-height: 1.6;
+            margin-bottom: 20px;
+            font-size: 0.9em; /* 调整文字大小 */
+            color: #333;
+            text-align: left;
+        }
+        .instructions p {
+            margin-bottom: 10px;
+        }
+        .instructions ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        input[type="number"] {
+            width: calc(100% - 40px);
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            -moz-appearance: textfield; /* Firefox */
+            -webkit-appearance: none; /* Chrome, Safari, Edge */
+            appearance: none;
+            font-size: 1em;
+        }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        button {
+            padding: 15px 30px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+        }
+        .history {
+            margin-top: 20px;
+            text-align: left;
+            font-size: 1em;
+            color: #555;
+        }
+        .history-item {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>猜数字游戏</h1>
+        <div class="instructions">
+            <p>欢迎来到猜数字游戏！我是花哥，我已经想好了一个四位数（四个数字不重复）。你每猜一次，我会给你一些提示：</p>
+            <ul>
+                <li><strong>A:</strong> 表示数字和位置都正确。</li>
+                <li><strong>B:</strong> 表示数字正确但位置不正确。</li>
+            </ul>
+            <p>比如，如果你猜的是9510，而答案是9081，那么你会得到1A2B的提示：1A表示有1个数字（9）的位置和值都正确；2B表示有两个数字（0和1）存在于答案中但位置不正确。</p>
+            <p>试着用最少的次数猜出这个神秘的四位数吧！</p>
+        </div>
+        <input type="number" id="guessInput" min="1000" max="9999" placeholder="请输入你的四位猜测">
+        <br>
+        <button onclick="checkGuess()">提交</button>
+        <button onclick="resetGame()" style="display:none;" id="restartButton">重新开始</button>
+        <div class="result" id="result"></div>
+        <div class="history" id="history"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to generate a secret number
+            function generateSecretNumber() {
+                const digits = '0123456789'.split('');
+                let secretNumber = '';
+                while (secretNumber.length < 4) {
+                    const randomIndex = Math.floor(Math.random() * digits.length);
+                    if (!secretNumber.includes(digits[randomIndex])) {
+                        secretNumber += digits[randomIndex];
+                    }
+                }
+                return secretNumber;
+            }
+
+            let secretNumber = generateSecretNumber();
+            let attempts = 0;
+
+            // Attach functions to window object
+            window.checkGuess = function() {
+                const guess = document.getElementById('guessInput').value;
+                const resultDiv = document.getElementById('result');
+                const historyDiv = document.getElementById('history');
+                attempts++;
+
+                if (guess.length !== 4 || !/^\d{4}$/.test(guess) || new Set(guess).size !== 4) {
+                    resultDiv.textContent = '请输入一个四位数，且每位数字不能重复。';
+                    return;
+                }
+
+                let aCount = 0;
+                let bCount = 0;
+
+                for (let i = 0; i < 4; i++) {
+                    if (guess[i] === secretNumber[i]) {
+                        aCount++;
+                    } else if (secretNumber.includes(guess[i])) {
+                        bCount++;
+                    }
+                }
+
+                if (aCount === 4) {
+                    resultDiv.textContent = `恭喜猜对啦，你这次回答正确总共用了 ${attempts} 次`;
+                    document.getElementById('guessInput').disabled = true;
+                    document.querySelector('button').disabled = true;
+                    document.getElementById('restartButton').style.display = 'inline-block';
+                } else {
+                    resultDiv.textContent = `${aCount}A${bCount}B`;
+                }
+
+                // Add guess and feedback to history
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.textContent = `第 ${attempts} 次猜测: ${guess} -> ${aCount}A${bCount}B`;
+                historyDiv.appendChild(historyItem);
+            };
+
+            window.resetGame = function() {
+                secretNumber = generateSecretNumber();
+                attempts = 0;
+                document.getElementById('guessInput').value = '';
+                document.getElementById('guessInput').disabled = false;
+                document.querySelector('button').disabled = false;
+                document.getElementById('restartButton').style.display = 'none';
+                document.getElementById('result').textContent = '';
+                document.getElementById('history').innerHTML = ''; // Clear history
+            };
+        });
+    </script>
+</body>
+</html>
